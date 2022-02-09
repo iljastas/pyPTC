@@ -4,7 +4,7 @@ The path (its x- and y-positions) is time indepedent, but a path tracking contro
 
 Here, flatness-based feedforward controls are derived, because for nonlinear systems it is more accurate.
 
-The flat ouput is $\sqrt{2}$
+The flat ouput is katex.render("c = \\pm\\sqrt{a^2 + b^2}", element, {   throwOnError: false});
 
 
 
