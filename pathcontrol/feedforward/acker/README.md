@@ -4,7 +4,7 @@ The path (its x- and y-positions) is time indepedent, but a path tracking contro
 
 Here, flatness-based feedforward controls are derived, because for nonlinear systems it is more accurate.
 
-The flat ouput is <pre xml:lang="latex">\sqrt{2}</pre>
+The flat ouput is $\sqrt{2}$
 
 
 
