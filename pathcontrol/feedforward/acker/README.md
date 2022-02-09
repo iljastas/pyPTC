@@ -4,7 +4,7 @@ The path (its x- and y-positions) is time indepedent, but a path tracking contro
 
 Here, flatness-based feedforward controls are derived, because for nonlinear systems it is more accurate.
 
-The flat ouput is <img src="https://latex.codecogs.com/svg.image?\bm&space;y_f&space;=&space;\begin{bmatrix}&space;x&space;&&space;y&space;\end{bmatrix}^T" title="\bm y_f = \begin{bmatrix} x & y \end{bmatrix}^T" />
+The flat ouput is <img src="https://latex.codecogs.com/svg.image?a" />
 
 ## Kinematic feed forward
 
