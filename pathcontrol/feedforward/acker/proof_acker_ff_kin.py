@@ -1,3 +1,9 @@
+'''
+    Content: Deviation of the feedforward with a kinematic model for Ackermann-steered vehicles
+    Author: Ilja Stas
+    Date: 08.02.2022
+'''
+
 from sympy import Symbol
 from sympy.printing.latex import LatexPrinter, print_latex
 from sympy.core.function import UndefinedFunction, Function
