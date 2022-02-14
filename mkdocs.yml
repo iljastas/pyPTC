@@ -1,7 +1,12 @@
-        site_name: My Docs
-        docs_dir: .
-        site_dir: ../site
+site_name: My Docs
+docs_dir: .
+site_dir: ../site
 
-        plugins:
-          - search
-          - same-dir
+plugins:
+  - search
+  - same-dir
+ 
+theme:
+    name: readthedocs
+
+ 
