@@ -1,0 +1,7 @@
+        site_name: My Docs
+        docs_dir: .
+        site_dir: ../site
+
+        plugins:
+          - search
+          - same-dir
