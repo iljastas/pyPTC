@@ -1,2 +1,2 @@
-# Feedforward
-See my [About](feedforward/acker/README.md) page for details. 
+# ACKER
+See my [About](acker/README.md) page for details.
