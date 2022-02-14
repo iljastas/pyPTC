@@ -19,6 +19,9 @@ build:
 #sphinx:
 #   configuration: docs/conf.py
 
+mkdocs:
+  configuration: mkdocs.yml
+
 # If using Sphinx, optionally build your docs in additional formats such as PDF
 # formats:
 #    - pdf
