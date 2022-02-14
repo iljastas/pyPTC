@@ -1,2 +1,2 @@
 # Feedforward
-See my [About](pathcontrol/feedforward/acker/README.md) page for details. 
+See my [About](feedforward/acker/README.md) page for details. 
