@@ -1,0 +1,16 @@
+
+from itertools import count
+from vizualization.visualizer_matplotlib import Visualizer_Matplolib as Visualizer_MPL
+
+
+class Simulation()
+    def __init__(self, visualizer=Visualizer_MPL()):
+        self._vis = visualizer
+
+    def run(self):
+        
+
+
+        for i in count():
+            pass
+
