@@ -41,7 +41,7 @@ extra:
 #  - License: docs/license.md
   
 nav:
-    - Home: 'index.md'
+    - Home: 'README.md'
     - 'Path Tracking Controls': 
         - 'Feedforward': 'pathcontrol/feedforward/README.md'
         - 'LQR with Feedback Linearization': 'pathcontrol/lqr_fblc/README.md'
