@@ -27,6 +27,9 @@ extra:
 
 nav:
   - Home: index.md
+  - Path Tracking Control: pathcontrol/README.md
+  - LQR: pathcontrol/lqr_fblc/README.md
   - About: docs/about.md
   - License: docs/license.md
-  - Path Tracking Control: pathcontrol/README.md
+  
+
