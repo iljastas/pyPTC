@@ -8,12 +8,21 @@ plugins:
 
 theme:
     name: readthedocs
+#    features:
+#        - navigation.sections
 
 markdown_extensions:
     - toc:
         permalink: "#"
         baselevel: 1
         separator: "_"
+    - pymdownx.arithmatex:
+        generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 site_name: pyPTC - Python Path Tracking Control
 site_author: Ilja Stas
@@ -25,11 +34,17 @@ copyright: ©Ilja Stas
 extra:
     version: 0.1
 
-nav:
-  - Home: index.md
-  - Path Tracking Control: pathcontrol/README.md
-  - LQR: pathcontrol/lqr_fblc/README.md
-  - About: docs/about.md
-  - License: docs/license.md
+#nav:
+#  - Home: index.md
+#  - 'Path Tracking Control': pathcontrol/lqr_fblc/README.md
+#  - About: docs/about.md
+#  - License: docs/license.md
   
-
+nav:
+    - Home: 'index.md'
+    - 'Path Tracking Controls': 
+        - 'Feedforward': 'pathcontrol/feedforward/README.md'
+        - 'LQR with Feedback Linearization': 'pathcontrol/lqr_fblc/README.md'
+    - About:
+        - 'License': 'docs/license.md'
+        - 'Release Notes': 'release-notes.md'

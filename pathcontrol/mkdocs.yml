@@ -1,0 +1,39 @@
+site_name: My Docs
+docs_dir: .
+site_dir: ../site
+
+plugins:
+  - search
+  - same-dir
+
+theme:
+#    name: readthedocs
+    features:
+        - navigation.sections
+
+markdown_extensions:
+    - toc:
+        permalink: "#"
+        baselevel: 2
+        separator: "_"
+
+site_name: pyPTC - Python Path Tracking Control
+site_author: Ilja Stas
+site_favicon: docs/icon.png
+site_description: site_description
+repo_url: https://github.com/iljastas/pyPTC
+repo_name: pyPTC
+copyright: ©Ilja Stas
+extra:
+    version: 0.1
+
+#nav:
+#  - Home: index.md
+#  - 'Path Tracking Control': pathcontrol/lqr_fblc/README.md
+#  - About: docs/about.md
+#  - License: docs/license.md
+  
+nav:
+    - test: 'pathcontrol/lqr_fblc/README.md'
+    - asd:  'pathcontrol/feedforward/README.md'
+        

@@ -1,2 +1,12 @@
-# Pathcontrol
-See my [About](feedforward/README.md) page for details.
+# LQR with Feedback Linearization
+
+## Ackermann
+
+
+### ASD
+
+#### ASD
+
+BLA PatControl Level 3
+
+$$ a=b $$
