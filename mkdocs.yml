@@ -47,4 +47,3 @@ nav:
         - 'LQR with Feedback Linearization': 'pathcontrol/lqr_fblc/README.md'
     - About:
         - 'License': 'docs/license.md'
-        - 'Release Notes': 'release-notes.md'
