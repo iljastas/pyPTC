@@ -8,4 +8,7 @@ is transformed into the coordinate system of the path reference pose $\mathbf p_
 $\mathbf p_e  =  \begin{bmatrix} \cos{\theta_r} & \sin{\theta_r} & 0 \newline 
                                     -\sin{\theta_r} & \cos{\theta_r} & 0 \newline
                                      0 & 0 & 1
-   						 \end{bmatrix}		 \begin{bmatrix}  x_c - x_r \newline  y_c - y_r \newline  \theta_c - \theta_r	 \end{bmatrix}$
+   						 \end{bmatrix}		 \begin{bmatrix}  x_c - x_r \newline  y_c - y_r \newline  \theta_c - \theta_r	 \end{bmatrix}$.
+
+The error dynamics $\mathbf{\dot p_e} = \begin{bmatrix} \dot x_e & \dot y_e & \dot \theta_e\end{bmatrix}^T$ is calculated by the time derivative of $\mathbf p_e$ 
+
