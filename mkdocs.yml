@@ -43,6 +43,8 @@ extra:
 nav:
     - Home: 'README.md'
     - 'Path Tracking Controls': 
+        - 'Overview': 'pathcontrol/README.md'
+        - 'Error model': 'pathcontrol/error_model.md'
         - 'Feedforward': 'pathcontrol/feedforward/README.md'
         - 'LQR with Feedback Linearization': 'pathcontrol/lqr_fblc/README.md'
     - About:
