@@ -10,7 +10,7 @@ class Robot_State() :
     
         self.wheelloader_type = wheelloader_type
         self.look_ahead = robot_parameter.look_ahead
-        self.length_offset = robot_parameter.length_offset
+        self.length_offset = robot_parameter.length_offset()
         self.var_xy = var_xy
         self.var_yaw = var_yaw
         self.l10n_update_distance = l10n_update_distance
@@ -24,12 +24,13 @@ class Robot_State() :
         # self.init = Init(x=x, y=y, yaw=yaw, steer_angle=steerAngle, velocity=velocity)
         self.reset_me(x, y, yaw, steerAngle, velocity)
 
-    def update(self, x, y, yaw, velocity, steerAngle=0.0, steerRate=0.0):
+    def update(self, x, y, yaw, velocity=0.0, steerAngle=0.0, steerRate=0.0):
         self.x = x
         self.y = x
         self.yaw = yaw
         self.velocity = velocity
         self.steer = steerAngle
+        
     def get_xPosition(self):
         return self.x()
 
@@ -39,6 +40,10 @@ class Robot_State() :
                 "xOffset": self.xo, "yOffset": self.yo, "deltaVel": self.deltaVel, 
                 "vRight": self.vR, "vLeft": self.vL, "yawRate_front": self.yawRate_front, "yawRate_rear": self.yawRate_rear,
                 "yaw_front": self.yaw_front, "yaw_rear": self.yaw_rear, "steer_front": self.steerAngle}
+        
+    def xyYawOffset_as_list(self):
+        return [self.xo, self.yo, self.yaw]
+        
     #### OLD FROM DISS
         
     def update_lengthoffset(self, length_offset):

@@ -33,6 +33,9 @@ class Robot_Parameters():
     def max_velocity(self):
         return self._max_velocity
 
+    def length_offset(self):
+        return self._length_offset
+
     def type(self):
         return self._type
 
@@ -50,7 +53,7 @@ class Ackermann_Parameters(Robot_Parameters) :
 
         # Geometry
         self._wheelbase = wheelbase
-        self.length_offset = length_offset
+        self._length_offset = length_offset
         self.look_ahead = look_ahead
                 
         # Velocity
@@ -74,85 +77,4 @@ class Ackermann_Parameters(Robot_Parameters) :
         # Velocity/Longitundinal Dynamic
         self.T_PT1_vel = T_PT1_vel
 
-
-
-
-
-class Skid_Parameter() :
-    def __init__(self,
-                 wheelbase=3.0, track=1.0, length_offset=-1.0, gradient_accel=5.0,
-                 max_velocity=0.6, look_ahead = 2.0, T_pt1_vel=0.3, min_velocity=None) :   
-        
-        self.type = "Skid"
-        
-        # Geometry
-        self.wheelbase = wheelbase
-        self.track = track
-        self.half_track = track/2.0
-        self.length_offset = length_offset
-        self.look_ahead = look_ahead
-                
-        # Velocity
-        if min_velocity is None:
-            self.min_velocity = max_velocity
-        else:
-            self.min_velocity = min_velocity
-        self.max_velocity = max_velocity
-        self.max_accel = gradient_accel # m/s^2
-
-        # Velocity Dynamic
-        self.T_pt1_vel = T_pt1_vel
-        self.T_pt1_dV = T_pt1_vel
-
-        self.T_v__pribot = 0.2
-        self.V_v__pribot = 0.96
-
-        # Yaw dynamic
-        self.T_PT1_yaw = 0.09
-        self.V_PT1_yaw = 0.95
-
-
-
-class Articulated_Parameter() :
-    def __init__(self,
-                 length_front=1.5, length_rear=1.5, length_offset=-1.0,
-                 max_steerAngle=0.6, T_steer=0.02, min_velocity=None, max_velocity=1.0,look_ahead=0.0) :   
-        
-        self.type = "Articulated"
-        
-        # Geometry
-        self.wheelbase      = length_front + length_rear
-        self.length_front   = length_front
-        self.length_rear    = length_rear
-        self.length_offset  = length_offset
-        self.look_ahead     = look_ahead
-                
-        # Velocity
-        if min_velocity is None:
-            self.min_velocity = max_velocity
-        else:
-            self.min_velocity = min_velocity
-        self.max_velocity = max_velocity
-        self.mean_velocity = (self.min_velocity + max_velocity) / 2.0
-
-        # Steering Dynamic
-        self.max_steerAngle = max_steerAngle
-        self.T_PT1_steer = T_steer
-        # self.T2_PT2_steer = 0.0186
-        # self.T1_PT2_steer = 0.1893
-        
-        self.T2_PT2_steer = 0.02
-        self.T1_PT2_steer = 0.2
-        
-        # self.T2_PT2_steer = 0.0324
-        # self.T1_PT2_steer = 0.36         
-        self.tDead_steer = 0.02
-        self.steer_gradient = np.deg2rad(70.0) # rad/s
-
-        # Yaw dynamic
-        self.T_PT1_yaw = 0.2
-        self.V_PT1_yaw = 0.95
-
-        # Velocity Dynamic
-        self.T_PT1_vel = 0.2
 

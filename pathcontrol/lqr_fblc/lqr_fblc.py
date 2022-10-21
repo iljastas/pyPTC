@@ -7,7 +7,7 @@ from numpy.linalg import inv
 from threading import Thread, Lock
 from numpy import fabs, sin, cos, tan
 
-from PythonRobotics.PathTracking.lqr_steer_control import dlqr
+from PythonRobotics.PathTracking.lqr_steer_control.lqr_steer_control import dlqr
 
 class LQR_FBL:
     

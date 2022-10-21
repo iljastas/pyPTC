@@ -10,9 +10,11 @@ class Visualizer_Matplotlib:
         plt.show(block=False) # for custom pause, so that matplolib-window do not pop to front on each update
 
         self._path = path_numpy_3xN
-        self._desPath_xy = np.array([self._path.x(), self._path.y()])
+        self._desPath_xy = np.array([self._path.xOffset(), self._path.yOffset()])
         self._robot_params = robot_parameters
         self._robot_state = robot_state
+
+        self._driven_path = [[],[]]
 
     def set_robotState(self, robot_state):
         self._robot_state = robot_state
@@ -31,14 +33,30 @@ class Visualizer_Matplotlib:
                 canvas.start_event_loop(interval)
                 return
 
+    def update_drivenPath(self):
+        state = self._robot_state.as_dict()
+        self._driven_path[0].append(state["x"])
+        self._driven_path[1].append(state["y"])
+
     def plot_path(self, path_2xN):
-        self.ax.plot(path_2xN[0,:], path_2xN[1,:], color="tab:red", linewidth=2)
-        
+        if isinstance(path_2xN, list):
+            self.ax.plot(path_2xN[0], path_2xN[1], color="tab:red", linewidth=2)
+        else: # is numpy-array
+            self.ax.plot(path_2xN[0,:], path_2xN[1,:], color="tab:green", linewidth=2)
+            
+    def plot_point(self, point, color, marker):
+        self.ax.plot(point[0], point[1], marker=marker, color=color, markersize=5)
 
     def plot(self):
         # Plot desired and driven path
         self.plot_path(self._desPath_xy)
-        
+        self.update_drivenPath()
+        self.plot_path(self._driven_path)
+
+
+        # Plot Points
+        self.plot_point(self._path.nearest_neighbor(), color="k", marker="x")
+        self.plot_point(self._path.nn_lah(), color="b", marker="o")
 
         # Plot robot/vehicle
         if self._robot_params.type() == "Ackermann":

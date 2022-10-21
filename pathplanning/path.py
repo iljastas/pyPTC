@@ -1,21 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from numpy.linalg import inv
-import math
-from math import sin, cos
-import sys
-from threading import Thread, Lock
-import matplotlib.pyplot as plt
-from collections import namedtuple
-import copy
-
-import sys
-import os
-main_path = os.path.dirname("/home/ilja/02_diss_ws/src/04_path_tracking/pathtracking_all/src/")
-sys.path.append(main_path) 
+from numpy import sin, cos
 
 # LOCAL
-
+from helpers.transformation_helper import xyYaw_to_matrix, minusPi_to_pi, matrix_to_yaw
 
 
 
@@ -27,8 +16,14 @@ sys.path.append(main_path)
 
 class Path:  
 
-    def __init__(self, path_name="line", path_numpy_xy_2xN=None):
-        pass
+    def __init__(self, robot_state, robot_parameters,
+                       path_name="line", path_numpy_xy_2xN=None, velocity=1.0):
+        self._robParams = robot_parameters
+        self._robot_state = robot_state
+
+        self._index_nn = -1
+        self._index_nn_lah = -1
+        self._meters_around_last_nnidx = 0.3
 
         if path_name == "PythonRobotics.lqr_steer_control":
             from PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import calc_spline_course
@@ -40,39 +35,98 @@ class Path:
             self.path = np.vstack( (x,y,yaw) )
             print(self.path.shape)
 
-
         self._x = x
         self._y = y
-
+        dx, dy    = self._calc_dot(x, y)
+        ddx, ddy  = self._calc_ddot(dx, dy)
+        self._yaw = self._calc_yaw(dx, dy, velocity)
+        print(self._robParams.length_offset)
+        self._xOffset, self._yOffset         = self._calc_offset_path(x, y, self._yaw, self._robParams.length_offset())
+        self._arclength, ds, self._ds_mean   = self._calc_arclength(dx, dy)
+        
+        # Set robot to path origin
+        self._robot_state.update(x=self._x[0], y=self._y[1], yaw=self._yaw[0])
+        
+        self.goal = xyYaw_to_matrix(self._xOffset[-1], self._yOffset[-1], self._yaw[-1])
+        self.goalInv = inv(self.goal)
+        
     def x(self):
         return self._x
     def y(self):
         return self._y
+    def yaw(self):
+        return self._yaw
+    def xOffset(self):
+        return self._xOffset
+    def yOffset(self):
+        return self._yOffset
+    def xyYawOffset_as_list(self):
+        return [self.x(), self.y(), self.yaw()]
+    def xyYawOffset_as_numpy(self):
+        return np.vstack( (self.x(), self.y(), self.yaw()) )
 
-    def init_diss(self, x, y, robot_state, robot_param, vel = 1.0, length_path_end=5.0) :
-        # Class Variables
-        self._mutex = Lock()
 
-        # Arguments
-        self.x = x
-        self.y = y
+    ####################################################################
+    ######################### EXECUTE FUNCTION #########################
+    def execute(self, lookahead_length) :
+        state = self._robot_state.as_dict()
+        xyYaw = [state["x"], state["y"], state["yaw"]]
+
+        # Nearest Neighbour for Visualization
+        index_nn, nn_matrix = self._get_indexNearestPosition(xyYaw, self._index_nn)
+        self._update_index_nn(index_nn)
+        
+        # Nearest Neighbour FOR lookahead-distance for Visualization
+        index_nn_lh, des_lah_pose_matrix = self._get_indexNearestPosition(xyYaw, self._index_nn_lah, lookahead_length)
+        self._update_indexNnLookahead(index_nn_lh)
+        diff_error_matrix_lh = self._get_errorMatrix(des_lah_pose_matrix, xyYaw)
+
+        # Behind Goal
+        behind_goal = self._is_behindGoal(xyYaw, state["v"])
+            
+        return diff_error_matrix_lh, behind_goal
+
+
+    
+    def _is_behindGoal(self, robot_state, velocity):
+        xo, yo, yaw = robot_state[0], robot_state[1], robot_state[2]
+        actual = xyYaw_to_matrix(xo, yo, yaw)
+        goal2actual = self.goalInv @ actual
+        length_to_goal = np.hypot( goal2actual[0,3], goal2actual[1,3] )
+        
+        if length_to_goal > 3.0:
+            return False
+        else :
+            dx = goal2actual[0, 3]
+            if velocity > 0.0 and dx > 0.0:
+                return True
+            elif velocity < 0.0 and dx < 0.0:
+                return True 
+            else :
+                return False             
+
+    def _update_index_nn(self, idx):
+        self._index_nn = idx
+    def _update_index_nn_lah(self, idx):
+        self._index_nn_lah = idx
+    def nearest_neighbor(self): # Nearest Neighbor to path
+        return [self._xOffset[self._index_nn], self._yOffset[self._index_nn], self._yaw[self._index_nn]]
+    def nn_lah(self): # Nearest Neighbor of look ahead distance
+        return [self._xOffset[self._index_nn_lah], self._yOffset[self._index_nn_lah], self._yaw[self._index_nn_lah]]
+
+######################################################################################
+    def init_diss(self, x, y, robot_state, robot_param, vel=1.0, length_path_end=5.0) :
         self.wheelbase = robot_param.wheelbase
         # self.offset = robot_param.length_offset
         self.offset = -1.5
         self.min_length_goal_reached = length_path_end
         self.robot_state = robot_state
 
-        # Calculate related path element/stuff/foo
-        # print("asd")
-        self.dx, self.dy    = self._calc_dot()
-        self.ddx, self.ddy  = self._calc_ddot()
-        self.yaw            = self._calc_yaw(self.dx, self.dy, vel)
         # print(np.mean(self.yaw))
 
         self.curve          = self._calc_curve(self.dx, self.ddx, self.dy, self.ddy)
         self.steer          = self._calc_steer(self.curve, vel)
-        self.x_offset, self.y_offset            = self._calc_offset_path(self.x, self.y, self.yaw)
-        self.arclength, self.ds, self.ds_mean   = self._calc_arclength(self.dx, self.dy)
+
 
         # Set Goal
         self.goal = xyYaw_to_matrix(self.x_offset[-1], self.y_offset[-1], self.yaw[-1])
@@ -218,77 +272,7 @@ class Path:
                 plt.show()
 
 
-    ####################################################################
-    ######################### EXECUTE FUNCTION #########################
-    def execute(self, look_ahead=None, purepursuit=False, wheelloader=False) :
-        with self._mutex:
-            if wheelloader:
-                l10nOffset = self.robot_state.get_l10nOffset()
-            else:
-                l10nOffset = self.robot_state.get_l10nOffset()
-
-            # Nearest Index for Visualization
-            index_nn, dL, nearestPath_matrix, nearest_xyYaw = self._get_indexNearestPosition(l10nOffset)
-            self.nearest_xyYaw = nearest_xyYaw
-            # print("index_nn:", index_nn)
-            self._update_index_nn(index_nn)
-            # Error and Driven Path
-            diff_error_matrix_nn = self._get_errorMatrix(nearestPath_matrix, l10nOffset)
-            # print("diff_error_matrix_nn[1,3]:", diff_error_matrix_nn[1,3])
-            self._update_lateralError(index_nn, diff_error_matrix_nn[1,3])
-            self._update_yawError(index_nn, matrix_to_yaw(diff_error_matrix_nn) )
-            self._update_drivenPath(l10nOffset)
-
-            # Nearest Index for  Control
-            if look_ahead is None:
-                index_nn_lh = index_nn
-                diff_error_matrix_lh = diff_error_matrix_nn
-                self._update_indexNnLookahead(index_nn_lh)
-            if purepursuit == False:
-                index_nn_lh, _, des_lah_pose_matrix, lah_xyYaw = self._get_indexNearestPosition(l10nOffset, look_ahead)
-                diff_error_matrix_lh = self._get_errorMatrix(des_lah_pose_matrix, l10nOffset)
-                self._update_indexNnLookahead(index_nn_lh)
-            else:
-                index_nn_lh, _, des_lah_pose_matrix = self._get_indexNearestPosition_byCircle(l10nOffset, look_ahead)
-                diff_error_matrix_lh = self._get_errorMatrix(des_lah_pose_matrix, l10nOffset, in_robotframe=True)
-                self._update_indexNnLookahead(index_nn_lh)
-                
-
-            # Behind Goal
-            velocity = self.robot_state.get_velocity()
-            behind_goal = self._is_behindGoal(l10nOffset, velocity)
-            
-        return diff_error_matrix_lh, behind_goal, index_nn, index_nn_lh, dL, diff_error_matrix_nn
-    ####################################################################
-    ####################################################################
-
-
-    def _is_behindGoal(self, robot_state, velocity):
-
-        if self.arclength[-1]*0.95 > self.drivenPath.arclength[-1]:
-            return False
-        # print(self.drivenPath.arclength[-1])
-
-        xo, yo, yaw = robot_state[0], robot_state[1], robot_state[2]
-        actual = xyYaw_to_matrix(xo, yo, yaw)
-        goal2actual = self.goalInv @ actual
-        length_to_goal = np.hypot( goal2actual[0,3], goal2actual[1,3] )
-
-        self.length_to_goal = length_to_goal
-
-        if length_to_goal > self.min_length_goal_reached :
-            return False
-        else :
-            
-            dx = goal2actual[0, 3]
-
-            if velocity > 0.0 and dx > 0.0:
-                # print("asdassd")
-                return True
-            elif velocity < 0.0 and dx < 0.0:
-                return True 
-            else :
-                return False               
+  
 
 
     def _get_errorMatrix(self, desired, l10nOffset, in_robotframe=False) :
@@ -303,113 +287,33 @@ class Path:
 
         return diff_tf
 
-    def _get_indexNearestPosition_byCircle(self, l10nOffset, lookahead_distance):
-
-        idx_around_last_nn = int( self.meters_around_last_nnidx / np.fabs(self.ds_mean)+1  )
-        # Define Start-Idx for the Loop
-
-        if  self.index_nn_lh  < 0:
-            current_xy = np.vstack( (l10nOffset[0], l10nOffset[1]) ).reshape(1,-1)
-            self.index_nn_lh = self._init_index_nn(current_xy)
-            idx_around_last_nn = int( 10.0 / np.fabs(self.ds_mean)+1  )
-
-
-        start_index = self.index_nn_lh - idx_around_last_nn
-        if start_index < 0 :
-            start_index = 0
-        # Define End-Idx for the Loop
-        if self.index_nn_lh < 0: # self.index_lookahead is not inited
-            end_index = len(self.x)
-        else: 
-            end_index = self.index_nn_lh + idx_around_last_nn
-        if end_index > len(self.x) :
-            end_index = len(self.x)
-
-        # GET DESIRED-POSE
-        dist_to_lookahead = float("inf")
-        path_desired_idx = self.index_nn_lh
-        actual_tfMatrix = xyYaw_to_matrix(l10nOffset[0], l10nOffset[1], l10nOffset[2])
-        for i in range(start_index, end_index) :           
-            iPath_tfMat = xyYaw_to_matrix(self.x_offset[i], self.y_offset[i], self.yaw[i])
-            dist_offset2path = getLength2DSign(actual_tfMatrix, iPath_tfMat)
-            if dist_offset2path < 0.0 :
-                continue
-            else :
-                eDist = dist_offset2path - lookahead_distance
-                
-                if eDist <= 0.0 :
-                    continue
-                elif eDist < dist_to_lookahead :
-                    dist_to_lookahead = eDist
-                    path_desired_idx = i
-                    if np.fabs(dist_to_lookahead) <  np.fabs(self.ds_mean):
-                        break
-
-       
-        desired_pose_matrix = xyYaw_to_matrix(self.x_offset[path_desired_idx], self.y_offset[path_desired_idx], self.yaw[path_desired_idx])
-        return path_desired_idx, dist_offset2path, desired_pose_matrix
-
-
-    def _get_indexNearestPosition(self, robot_state, look_ahead=None):
-        # print(robot_state[0], robot_state[1], robot_state[2])
-        robot_state_lh = [robot_state[0], robot_state[1], robot_state[2] ]
-        # print("robot_state_lh:", robot_state_lh, type(robot_state_lh), look_ahead)
-        # sleep(11.1)
-        if look_ahead is not None:
-            # print("use look ahead")
-            # print("before lh:", robot_state[0] )
-            # print("\t debug:", robot_state_lh[0] + look_ahead * np.cos(robot_state[2]))
-            robot_state_lh[0] = robot_state_lh[0] + look_ahead * cos(robot_state[2])
-            robot_state_lh[1] = robot_state_lh[1] + look_ahead * sin(robot_state[2])
-            # print("after lh:", robot_state[0] )
-
-            last_nn_idx = self.index_nn_lh
-
-        else :
-            # print()
-            last_nn_idx = self.index_nn
-
-        if last_nn_idx < 0:
-            # print("\trobot_state_lh:", robot_state_lh, last_nn_idx, type(robot_state_lh), robot_state_lh[0])
-            current_xy = np.array(robot_state_lh)
-            current_xy = current_xy[0:-1].reshape(1,-1)
-            current_xy = np.array( [robot_state_lh[0], robot_state_lh[1]] ).reshape(1,-1)
-            # print("current_xy", current_xy, type(current_xy), current_xy.shape)
-            # try:
-            last_nn_idx = self._init_index_nn(current_xy)
-            # except:
-                # last_nn_idx = 0
+    def _get_indexNearestPosition(self, robot_state, last_nn_idx, look_ahead=0.0):
+        robot_state_lh = [robot_state[0], robot_state[1], robot_state[2] ] # like deepcopy
+        robot_state_lh[0] = robot_state_lh[0] + look_ahead * cos(robot_state[2])
+        robot_state_lh[1] = robot_state_lh[1] + look_ahead * sin(robot_state[2])
 
         # Define Start-Index and End-Index for the Loop       
-        start_index = last_nn_idx - int(self.meters_around_last_nnidx /  np.fabs(self.ds_mean)+1 )
+        start_index = last_nn_idx - int(self._meters_around_last_nnidx /  np.fabs(self._ds_mean)+1 )
         if start_index < 0 : start_index = 0
 
         if last_nn_idx < 0: # at init, search in whole path
-            end_index = len(self.x)-1
+            end_index = len(self.x()) - 1
         else: 
-            end_index = last_nn_idx + int( self.meters_around_last_nnidx / np.fabs(self.ds_mean)+1  )
-            if end_index > len(self.x) : end_index = len(self.x)
-
+            end_index = last_nn_idx + int( self._meters_around_last_nnidx / np.fabs(self._ds_mean)+1  )
+            if end_index > len(self.x()) : end_index = len(self.x())
+            
         # Get index for neatest euclidean distance
         dL = float('Inf')
         index = 0
         xo, yo, yaw = robot_state_lh[0], robot_state_lh[1], robot_state_lh[2]
-        # print("start_index: ", start_index)
-        # print("end_index: ", end_index)
-        # print("self.meters_around_last_nnidx: ", self.meters_around_last_nnidx)
-        # print("int( self.meters_around_last_nnidx / np.fabs(self.ds_mean) = ", int( self.meters_around_last_nnidx / np.fabs(self.ds_mean) +1) )
         for i in range(start_index, end_index) :
-            dL_ = np.hypot(self.x_offset[i] - xo, self.y_offset[i] - yo)
+            dL_ = np.hypot(self._xOffset[i] - xo, self._yOffset[i] - yo)
             if dL_ < dL :
                 index = i
                 dL = dL_
 
-        # xyYaw = [self.x[index], self.y[index], self.yaw[index] ]
-        pose_matrix = xyYaw_to_matrix(self.x_offset[index], self.y_offset[index], self.yaw[index])
-
-        des_xyYaw = [self.x_offset[index], self.y_offset[index], self.yaw[index]]
-
-        return index, dL, pose_matrix, des_xyYaw
+        pose_matrix = xyYaw_to_matrix(self._xOffset[index], self._yOffset[index], self._yaw[index])
+        return index, pose_matrix
 
 
     def _init_index_nn(self, current_xy):
@@ -498,8 +402,7 @@ class Path:
 
     ######################################################################################
     ########################## UPDATE CLASS VARIABLES ####################################
-    def _update_index_nn(self, index_nearest_neighbour):
-        self.index_nn = index_nearest_neighbour
+
     def _update_indexNnLookahead(self, index_nn_lookahead):
         self.index_nn_lh = index_nn_lookahead
     def _update_lateralError(self, index, y_error):
@@ -521,32 +424,31 @@ class Path:
         # print("arclength = ", arclength.shape)
         return arclength, ds, ds_mean
 
-    def _calc_offset_path(self, x, y, yaw) :
-        # print(self.offset, np.rad2deg(yaw[0]))
-        x_offset = x + self.offset * np.cos(yaw)
-        y_offset = y + self.offset * np.sin(yaw)
+    def _calc_offset_path(self, x, y, yaw, length_offset):
+        x_offset = x + length_offset * np.cos(yaw)
+        y_offset = y + length_offset* np.sin(yaw)
         return x_offset, y_offset
 
-    def _calc_dot(self) :
-        dx = np.diff(self.x)
-        dy = np.diff(self.y)
+    def _calc_dot(self, x, y) :
+        dx = np.diff(x)
+        dy = np.diff(y)
         dx = np.append(dx, [dx[-1]], axis=0)
         dy = np.append(dy, [dy[-1]], axis=0)
         return dx, dy
 
-    def _calc_ddot(self) :
-        ddx = np.diff(self.dx)
-        ddy = np.diff(self.dy)
+    def _calc_ddot(self, dx, dy) :
+        ddx = np.diff(dx)
+        ddy = np.diff(dy)
         ddx = np.append(ddx, [ddx[-1]], axis=0)
         ddy = np.append(ddy, [ddy[-1]], axis=0)
         return ddx, ddy
 
     def _calc_yaw(self, dx, dy, velocity) :
-        yaw = np.arctan2(self.dy, self.dx)
+        yaw = np.arctan2(dy, dx)
         if velocity < 0.0:
             # pass
             # print("_calc_yaw: if velocity < 0.0:")
-            yaw = [minusPi_to_pi(iyaw- math.pi) for (iyaw) in yaw]
+            yaw = [minusPi_to_pi(iyaw- np.pi) for (iyaw) in yaw]
             # yaw = np.asarray(self.yaw)
         # for iyaw in yaw:
             # if np.fabs(iyaw) > 0.2:

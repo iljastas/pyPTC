@@ -1,8 +1,8 @@
+#!/usr/bin/env python3
+
 # PYTHON
 import numpy as np
 from numpy import sin, cos, tan
-from icecream import ic as print
-
 from .robot_model import Robot_Model
 
 
